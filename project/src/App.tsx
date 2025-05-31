@@ -1,4 +1,4 @@
-// ✅ 작동 보장된 App.tsx 전체 코드
+// src/App.tsx
 
 import { useState } from "react";
 import {
@@ -52,44 +52,40 @@ function App() {
     setActiveId(event.active.id);
   };
 
-const handleDragEnd = (event) => {
-  const { active, over } = event;
-  if (!over) return;
-
-  setActiveId(null);
-
-  const from = findContainer(active.id);
-  const isOverItem = tiers.includes(over.id) === false && over.id !== "Unranked";
-  const to = isOverItem ? findContainer(over.id) : over.id;
-
-  if (!from || !to) return;
-
-  if (from === to) {
-    const list = from === "Unranked" ? [...unranked] : [...tierData[from]];
-    const oldIndex = list.indexOf(active.id);
-    const newIndex = list.indexOf(over.id);
-    const reordered = arrayMove(list, oldIndex, newIndex);
-    if (from === "Unranked") setUnranked(reordered);
-    else setTierData({ ...tierData, [from]: reordered });
-  } else {
-    const fromList = from === "Unranked" ? [...unranked] : [...tierData[from]];
-    const toList = to === "Unranked" ? [...unranked] : [...tierData[to]];
-
-    fromList.splice(fromList.indexOf(active.id), 1);
-    const insertIndex = isOverItem ? toList.indexOf(over.id) : toList.length;
-    toList.splice(insertIndex, 0, active.id);
-
-    if (from === "Unranked") setUnranked(fromList);
-    else tierData[from] = fromList;
-
-    if (to === "Unranked") setUnranked(toList);
-    else tierData[to] = toList;
-
-    setTierData({ ...tierData });
-  }
-};
-
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over) return;
     setActiveId(null);
+
+    const from = findContainer(active.id);
+    const isOverItem = !tiers.includes(over.id) && over.id !== "Unranked";
+    const to = isOverItem ? findContainer(over.id) : over.id;
+
+    if (!from || !to) return;
+
+    if (from === to) {
+      const list = from === "Unranked" ? [...unranked] : [...tierData[from]];
+      const oldIndex = list.indexOf(active.id);
+      const newIndex = list.indexOf(over.id);
+      const reordered = arrayMove(list, oldIndex, newIndex);
+      if (from === "Unranked") setUnranked(reordered);
+      else setTierData({ ...tierData, [from]: reordered });
+    } else {
+      const fromList = from === "Unranked" ? [...unranked] : [...tierData[from]];
+      const toList = to === "Unranked" ? [...unranked] : [...tierData[to]];
+
+      fromList.splice(fromList.indexOf(active.id), 1);
+      const insertIndex = isOverItem ? toList.indexOf(over.id) : toList.length;
+      toList.splice(insertIndex, 0, active.id);
+
+      if (from === "Unranked") setUnranked(fromList);
+      else tierData[from] = fromList;
+
+      if (to === "Unranked") setUnranked(toList);
+      else tierData[to] = toList;
+
+      setTierData({ ...tierData });
+    }
   };
 
   return (
@@ -117,11 +113,13 @@ const handleDragEnd = (event) => {
 
 function Tier({ title, items }) {
   return (
-    <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10 }}>
+    <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
       <h3 style={{ textAlign: "center" }}>{title}</h3>
-      <SortableContext id={title} items={items} strategy={rectSortingStrategy}>
+      <SortableContext items={items} strategy={rectSortingStrategy} id={title}>
         <div>
-          {items.map(id => <Item key={id} id={id} />)}
+          {items.map(id => (
+            <Item key={id} id={id} />
+          ))}
         </div>
       </SortableContext>
     </div>
@@ -130,9 +128,9 @@ function Tier({ title, items }) {
 
 function Item({ id, dragOverlay }) {
   const {
-    setNodeRef,
     attributes,
     listeners,
+    setNodeRef,
     transform,
     transition,
     isDragging,
@@ -158,4 +156,5 @@ function Item({ id, dragOverlay }) {
 }
 
 export default App;
+
 
