@@ -12,6 +12,7 @@ import {
   SortableContext,
   useSortable,
   arrayMove,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -41,7 +42,7 @@ function App() {
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (!over) return;
+    if (!over || active.id === over.id) return;
 
     const allTiers = { ...tierData, Unranked: unranked };
     let sourceTier = null;
@@ -54,27 +55,20 @@ function App() {
 
     if (!sourceTier || !targetTier) return;
 
-    if (sourceTier === targetTier) {
-      const items = [...allTiers[sourceTier]];
-      const oldIndex = items.indexOf(active.id);
-      const newIndex = items.indexOf(over.id);
-      const updated = arrayMove(items, oldIndex, newIndex);
+    const sourceItems = [...allTiers[sourceTier]];
+    const targetItems = [...allTiers[targetTier]];
 
-      if (sourceTier === "Unranked") setUnranked(updated);
-      else setTierData({ ...tierData, [sourceTier]: updated });
-    } else {
-      const sourceItems = allTiers[sourceTier].filter(id => id !== active.id);
-      const targetItems = [...allTiers[targetTier]];
-      const overIndex = targetItems.indexOf(over.id);
-      const insertIndex = overIndex >= 0 ? overIndex : targetItems.length;
-      targetItems.splice(insertIndex, 0, active.id);
+    sourceItems.splice(sourceItems.indexOf(active.id), 1);
 
-      if (sourceTier === "Unranked") setUnranked(sourceItems);
-      else tierData[sourceTier] = sourceItems;
+    const overIndex = targetItems.indexOf(over.id);
+    const insertIndex = overIndex >= 0 ? overIndex : targetItems.length;
+    targetItems.splice(insertIndex, 0, active.id);
 
-      if (targetTier === "Unranked") setUnranked(targetItems);
-      else setTierData({ ...tierData, [targetTier]: targetItems });
-    }
+    if (sourceTier === "Unranked") setUnranked(sourceItems);
+    else setTierData(prev => ({ ...prev, [sourceTier]: sourceItems }));
+
+    if (targetTier === "Unranked") setUnranked(targetItems);
+    else setTierData(prev => ({ ...prev, [targetTier]: targetItems }));
   };
 
   return (
@@ -100,7 +94,7 @@ function SortableTier({ title, items }) {
   return (
     <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
       <h3 style={{ textAlign: "center" }}>{title}</h3>
-      <SortableContext items={items} id={title}>
+      <SortableContext items={items} strategy={rectSortingStrategy} id={title}>
         <div>
           {items.map(id => <SortableItem key={id} id={id} />)}
         </div>
@@ -132,6 +126,7 @@ function SortableItem({ id }) {
 }
 
 export default App;
+
 
 
 
