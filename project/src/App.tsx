@@ -1,18 +1,16 @@
-// src/App.tsx
-
 import { useState } from "react";
 import {
   DndContext,
+  closestCorners,
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
   DragOverlay,
 } from "@dnd-kit/core";
 import {
+  arrayMove,
   SortableContext,
   useSortable,
-  arrayMove,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -38,9 +36,7 @@ function App() {
   const [unranked, setUnranked] = useState(allAnime);
   const [activeId, setActiveId] = useState(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
@@ -51,33 +47,31 @@ function App() {
     setActiveId(null);
     if (!over || active.id === over.id) return;
 
-    const allTiers = { ...tierData, Unranked: unranked };
-    let sourceTier = null;
-    let targetTier = null;
+    const allLists = { ...tierData, Unranked: unranked };
 
-    for (const tier in allTiers) {
-      if (allTiers[tier].includes(active.id)) sourceTier = tier;
-      if (tier === over.id || allTiers[tier].includes(over.id)) targetTier = tier;
+    let fromKey = null;
+    let toKey = null;
+
+    for (const key in allLists) {
+      if (allLists[key].includes(active.id)) fromKey = key;
+      if (key === over.id || allLists[key].includes(over.id)) toKey = key;
     }
 
-    if (!sourceTier || !targetTier) return;
+    if (!fromKey || !toKey) return;
 
-    const sourceItems = [...allTiers[sourceTier]];
-    const targetItems = [...allTiers[targetTier]];
+    const fromItems = [...allLists[fromKey]];
+    const toItems = [...allLists[toKey]];
 
-    sourceItems.splice(sourceItems.indexOf(active.id), 1);
-    const overIndex = targetItems.indexOf(over.id);
-    const insertIndex = overIndex >= 0 ? overIndex : targetItems.length;
-    targetItems.splice(insertIndex, 0, active.id);
+    fromItems.splice(fromItems.indexOf(active.id), 1);
+    const overIndex = toItems.indexOf(over.id);
+    const insertIndex = overIndex >= 0 ? overIndex : toItems.length;
+    toItems.splice(insertIndex, 0, active.id);
 
-    const newTierData = { ...tierData };
-    if (sourceTier === "Unranked") setUnranked(sourceItems);
-    else newTierData[sourceTier] = sourceItems;
+    if (fromKey === "Unranked") setUnranked(fromItems);
+    else setTierData(prev => ({ ...prev, [fromKey]: fromItems }));
 
-    if (targetTier === "Unranked") setUnranked(targetItems);
-    else newTierData[targetTier] = targetItems;
-
-    setTierData(newTierData);
+    if (toKey === "Unranked") setUnranked(toItems);
+    else setTierData(prev => ({ ...prev, [toKey]: toItems }));
   };
 
   return (
@@ -90,35 +84,27 @@ function App() {
         onDragEnd={handleDragEnd}
       >
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
-          <SortableTier title="Unranked" items={unranked} />
+          <Tier title="Unranked" items={unranked} />
           {tiers.map(tier => (
-            <SortableTier key={tier} title={tier} items={tierData[tier]} />
+            <Tier key={tier} title={tier} items={tierData[tier]} />
           ))}
         </div>
         <DragOverlay>
-          {activeId ? <SortableItem id={activeId} dragOverlay /> : null}
+          {activeId ? <Item id={activeId} dragOverlay /> : null}
         </DragOverlay>
       </DndContext>
     </div>
   );
 }
 
-function SortableTier({ title, items }) {
+function Tier({ title, items }) {
   return (
-    <div
-      style={{
-        minWidth: 200,
-        border: "2px solid #ccc",
-        borderRadius: 8,
-        padding: 10,
-        background: "#f9f9f9",
-      }}
-    >
+    <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
       <h3 style={{ textAlign: "center" }}>{title}</h3>
       <SortableContext items={items} strategy={rectSortingStrategy} id={title}>
-        <div style={{ minHeight: 40 }}>
+        <div>
           {items.map(id => (
-            <SortableItem key={id} id={id} />
+            <Item key={id} id={id} />
           ))}
         </div>
       </SortableContext>
@@ -126,31 +112,30 @@ function SortableTier({ title, items }) {
   );
 }
 
-function SortableItem({ id, dragOverlay }) {
-  const sortable = useSortable({ id });
+function Item({ id, dragOverlay }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
   const style = {
-    transform: CSS.Transform.toString(sortable.transform),
-    transition: sortable.transition,
+    transform: CSS.Transform.toString(transform),
+    transition,
     border: "1px solid #aaa",
     borderRadius: 6,
     padding: "6px 10px",
     margin: "4px 0",
-    background: dragOverlay
-      ? "#e0f7ff"
-      : sortable.isDragging
-      ? "#e0f7ff"
-      : "#fff",
+    background: dragOverlay ? "#e0f7ff" : isDragging ? "#e0f7ff" : "#fff",
     cursor: "grab",
-    opacity: sortable.isDragging && !dragOverlay ? 0.5 : 1,
+    opacity: isDragging && !dragOverlay ? 0.5 : 1,
   };
 
   return (
-    <div
-      ref={sortable.setNodeRef}
-      style={style}
-      {...sortable.attributes}
-      {...sortable.listeners}
-    >
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {id}
     </div>
   );
