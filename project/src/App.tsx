@@ -48,36 +48,38 @@ function App() {
     return null;
   };
 
-const handleDragEnd = (event) => {
-  const { active, over } = event;
-  setActiveId(null);
-  if (!over || active.id === over.id) return;
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
+  };
 
-  const from = findContainer(active.id);
-  const overContainer = tiers.includes(over.id) || over.id === "Unranked" ? over.id : findContainer(over.id);
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    setActiveId(null);
 
-  if (!from || !overContainer) return;
+    if (!over) return;
 
-  const fromList = [...(from === "Unranked" ? unranked : tierData[from])];
-  const toList = [...(overContainer === "Unranked" ? unranked : tierData[overContainer])];
+    const from = findContainer(active.id);
+    const to = over.id;
 
-  // Remove from old list
-  const fromIndex = fromList.indexOf(active.id);
-  fromList.splice(fromIndex, 1);
+    if (!from || !to || from === to) return;
 
-  // Add to new list
-  const overIndex = toList.indexOf(over.id);
-  const insertIndex = overIndex >= 0 ? overIndex : toList.length;
-  toList.splice(insertIndex, 0, active.id);
+    const fromList = [...(from === "Unranked" ? unranked : tierData[from])];
+    const toList = [...(to === "Unranked" ? unranked : tierData[to])];
 
-  if (from === "Unranked") setUnranked(fromList);
-  else tierData[from] = fromList;
+    const index = fromList.indexOf(active.id);
+    if (index === -1) return;
 
-  if (overContainer === "Unranked") setUnranked(toList);
-  else tierData[overContainer] = toList;
+    fromList.splice(index, 1);
+    toList.push(active.id);
 
-  setTierData({ ...tierData });
-};
+    if (from === "Unranked") setUnranked(fromList);
+    else tierData[from] = fromList;
+
+    if (to === "Unranked") setUnranked(toList);
+    else tierData[to] = toList;
+
+    setTierData({ ...tierData });
+  };
 
   return (
     <div style={{ padding: 20 }}>
@@ -89,9 +91,9 @@ const handleDragEnd = (event) => {
         onDragEnd={handleDragEnd}
       >
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
-          <Tier title="Unranked" items={unranked} />
+          <Tier id="Unranked" title="Unranked" items={unranked} />
           {tiers.map(tier => (
-            <Tier key={tier} title={tier} items={tierData[tier]} />
+            <Tier key={tier} id={tier} title={tier} items={tierData[tier]} />
           ))}
         </div>
         <DragOverlay>
@@ -102,11 +104,11 @@ const handleDragEnd = (event) => {
   );
 }
 
-function Tier({ title, items }) {
+function Tier({ id, title, items }) {
   return (
     <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
       <h3 style={{ textAlign: "center" }}>{title}</h3>
-      <SortableContext items={items} strategy={rectSortingStrategy} id={title}>
+      <SortableContext id={id} items={items} strategy={rectSortingStrategy}>
         <div>
           {items.map(id => (
             <Item key={id} id={id} />
@@ -147,6 +149,7 @@ function Item({ id, dragOverlay }) {
 }
 
 export default App;
+
 
 
 
