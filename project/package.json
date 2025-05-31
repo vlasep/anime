@@ -14,7 +14,7 @@
   "@dnd-kit/core": "5.0.2",
   "@dnd-kit/sortable": "6.0.0",
   "@dnd-kit/utilities": "3.2.1",
-  "@dnd-kit/modifiers": "^5.0.2"
+  "@dnd-kit/modifiers": "3.0.2"
 },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.0",
