@@ -1,3 +1,4 @@
+// src/App.tsx
 import { useState } from "react";
 import {
   DndContext,
@@ -8,9 +9,9 @@ import {
   DragOverlay,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   useSortable,
+  arrayMove,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -38,40 +39,57 @@ function App() {
 
   const sensors = useSensors(useSensor(PointerSensor));
 
+  const findContainer = (id) => {
+    if (unranked.includes(id)) return "Unranked";
+    for (const tier of tiers) {
+      if (tierData[tier].includes(id)) return tier;
+    }
+    return null;
+  };
+
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
   };
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    setActiveId(null);
-    if (!over || active.id === over.id) return;
-
-    const allLists = { ...tierData, Unranked: unranked };
-
-    let fromKey = null;
-    let toKey = null;
-
-    for (const key in allLists) {
-      if (allLists[key].includes(active.id)) fromKey = key;
-      if (key === over.id || allLists[key].includes(over.id)) toKey = key;
+    if (!over) {
+      setActiveId(null);
+      return;
     }
 
-    if (!fromKey || !toKey) return;
+    const from = findContainer(active.id);
+    const to = findContainer(over.id) || over.id;
 
-    const fromItems = [...allLists[fromKey]];
-    const toItems = [...allLists[toKey]];
+    if (!from || !to) {
+      setActiveId(null);
+      return;
+    }
 
-    fromItems.splice(fromItems.indexOf(active.id), 1);
-    const overIndex = toItems.indexOf(over.id);
-    const insertIndex = overIndex >= 0 ? overIndex : toItems.length;
-    toItems.splice(insertIndex, 0, active.id);
+    if (from === to) {
+      const items = from === "Unranked" ? [...unranked] : [...tierData[from]];
+      const oldIndex = items.indexOf(active.id);
+      const newIndex = items.indexOf(over.id);
+      const newItems = arrayMove(items, oldIndex, newIndex);
+      if (from === "Unranked") setUnranked(newItems);
+      else setTierData(prev => ({ ...prev, [from]: newItems }));
+    } else {
+      const fromItems = from === "Unranked" ? [...unranked] : [...tierData[from]];
+      const toItems = to === "Unranked" ? [...unranked] : [...tierData[to]];
 
-    if (fromKey === "Unranked") setUnranked(fromItems);
-    else setTierData(prev => ({ ...prev, [fromKey]: fromItems }));
+      fromItems.splice(fromItems.indexOf(active.id), 1);
+      const overIndex = toItems.indexOf(over.id);
+      const insertIndex = overIndex >= 0 ? overIndex : toItems.length;
+      toItems.splice(insertIndex, 0, active.id);
 
-    if (toKey === "Unranked") setUnranked(toItems);
-    else setTierData(prev => ({ ...prev, [toKey]: toItems }));
+      if (from === "Unranked") setUnranked(fromItems);
+      else setTierData(prev => ({ ...prev, [from]: fromItems }));
+
+      if (to === "Unranked") setUnranked(toItems);
+      else setTierData(prev => ({ ...prev, [to]: toItems }));
+    }
+
+    setActiveId(null);
   };
 
   return (
@@ -142,3 +160,4 @@ function Item({ id, dragOverlay }) {
 }
 
 export default App;
+
