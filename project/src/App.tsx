@@ -53,11 +53,22 @@ function App() {
 
     const allTiers = { ...tierData, Unranked: unranked };
     let sourceTier = null;
-    let targetTier = null;
+    let targetTier = over.id;
 
     for (const tier in allTiers) {
-      if (allTiers[tier].includes(active.id)) sourceTier = tier;
-      if (tier === over.id || allTiers[tier].includes(over.id)) targetTier = tier;
+      if (allTiers[tier].includes(active.id)) {
+        sourceTier = tier;
+        break;
+      }
+    }
+
+    if (!allTiers[targetTier]) {
+      for (const tier in allTiers) {
+        if (allTiers[tier].includes(over.id)) {
+          targetTier = tier;
+          break;
+        }
+      }
     }
 
     if (!sourceTier || !targetTier) return;
@@ -70,11 +81,15 @@ function App() {
     const insertIndex = overIndex >= 0 ? overIndex : targetItems.length;
     targetItems.splice(insertIndex, 0, active.id);
 
+    const newTierData = { ...tierData };
+
     if (sourceTier === "Unranked") setUnranked(sourceItems);
-    else setTierData(prev => ({ ...prev, [sourceTier]: sourceItems }));
+    else newTierData[sourceTier] = sourceItems;
 
     if (targetTier === "Unranked") setUnranked(targetItems);
-    else setTierData(prev => ({ ...prev, [targetTier]: targetItems }));
+    else newTierData[targetTier] = targetItems;
+
+    setTierData(newTierData);
   };
 
   return (
@@ -140,9 +155,3 @@ function SortableItem({ id, dragOverlay }) {
 }
 
 export default App;
-
-
-
-
-
-
