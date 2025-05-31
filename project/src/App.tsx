@@ -6,7 +6,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  rectIntersection,
+  closestCorners,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -41,7 +41,7 @@ function App() {
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over) return;
 
     const allTiers = { ...tierData, Unranked: unranked };
     let sourceTier = null;
@@ -49,17 +49,16 @@ function App() {
 
     for (const tier in allTiers) {
       if (allTiers[tier].includes(active.id)) sourceTier = tier;
-      if (allTiers[tier].includes(over.id)) targetTier = tier;
+      if (tier === over.id || allTiers[tier].includes(over.id)) targetTier = tier;
     }
 
     if (!sourceTier || !targetTier) return;
 
     if (sourceTier === targetTier) {
-      const updated = arrayMove(
-        allTiers[sourceTier],
-        allTiers[sourceTier].indexOf(active.id),
-        allTiers[sourceTier].indexOf(over.id)
-      );
+      const items = [...allTiers[sourceTier]];
+      const oldIndex = items.indexOf(active.id);
+      const newIndex = items.indexOf(over.id);
+      const updated = arrayMove(items, oldIndex, newIndex);
 
       if (sourceTier === "Unranked") setUnranked(updated);
       else setTierData({ ...tierData, [sourceTier]: updated });
@@ -67,8 +66,8 @@ function App() {
       const sourceItems = allTiers[sourceTier].filter(id => id !== active.id);
       const targetItems = [...allTiers[targetTier]];
       const overIndex = targetItems.indexOf(over.id);
-
-      targetItems.splice(overIndex + 1, 0, active.id);
+      const insertIndex = overIndex >= 0 ? overIndex : targetItems.length;
+      targetItems.splice(insertIndex, 0, active.id);
 
       if (sourceTier === "Unranked") setUnranked(sourceItems);
       else tierData[sourceTier] = sourceItems;
@@ -83,7 +82,7 @@ function App() {
       <h1 style={{ textAlign: "center" }}>애니 티어표</h1>
       <DndContext
         sensors={sensors}
-        collisionDetection={rectIntersection}
+        collisionDetection={closestCorners}
         onDragEnd={handleDragEnd}
       >
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
@@ -101,7 +100,7 @@ function SortableTier({ title, items }) {
   return (
     <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
       <h3 style={{ textAlign: "center" }}>{title}</h3>
-      <SortableContext items={items}>
+      <SortableContext items={items} id={title}>
         <div>
           {items.map(id => <SortableItem key={id} id={id} />)}
         </div>
@@ -111,7 +110,7 @@ function SortableTier({ title, items }) {
 }
 
 function SortableItem({ id }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -120,8 +119,9 @@ function SortableItem({ id }) {
     borderRadius: 6,
     padding: "6px 10px",
     margin: "4px 0",
-    background: "#fff",
+    background: isDragging ? "#e0f7ff" : "#fff",
     cursor: "grab",
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
