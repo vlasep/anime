@@ -96,8 +96,10 @@ function SortableTier({ title, items }) {
   return (
     <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
       <h3 style={{ textAlign: "center" }}>{title}</h3>
-      <SortableContext items={items} strategy={() => items}>
-        {items.map(id => <SortableItem key={id} id={id} />)}
+      <SortableContext items={items}>
+        <div>
+          {items.map(id => <SortableItem key={id} id={id} />)}
+        </div>
       </SortableContext>
     </div>
   );
