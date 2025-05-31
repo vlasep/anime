@@ -60,7 +60,7 @@ function App() {
     const from = findContainer(active.id);
     const to = findContainer(over.id) || over.id;
 
-    if (!from || !to || from === to) return;
+    if (!from || !to) return;
 
     const fromList = [...(from === "Unranked" ? unranked : tierData[from])];
     const toList = [...(to === "Unranked" ? unranked : tierData[to])];
@@ -146,6 +146,7 @@ function Item({ id, dragOverlay }) {
 }
 
 export default App;
+
 
 
 
