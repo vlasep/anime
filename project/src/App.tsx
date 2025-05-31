@@ -53,22 +53,11 @@ function App() {
 
     const allTiers = { ...tierData, Unranked: unranked };
     let sourceTier = null;
-    let targetTier = over.id;
+    let targetTier = null;
 
     for (const tier in allTiers) {
-      if (allTiers[tier].includes(active.id)) {
-        sourceTier = tier;
-        break;
-      }
-    }
-
-    if (!allTiers[targetTier]) {
-      for (const tier in allTiers) {
-        if (allTiers[tier].includes(over.id)) {
-          targetTier = tier;
-          break;
-        }
-      }
+      if (allTiers[tier].includes(active.id)) sourceTier = tier;
+      if (tier === over.id || allTiers[tier].includes(over.id)) targetTier = tier;
     }
 
     if (!sourceTier || !targetTier) return;
@@ -82,7 +71,6 @@ function App() {
     targetItems.splice(insertIndex, 0, active.id);
 
     const newTierData = { ...tierData };
-
     if (sourceTier === "Unranked") setUnranked(sourceItems);
     else newTierData[sourceTier] = sourceItems;
 
@@ -117,11 +105,21 @@ function App() {
 
 function SortableTier({ title, items }) {
   return (
-    <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
+    <div
+      style={{
+        minWidth: 200,
+        border: "2px solid #ccc",
+        borderRadius: 8,
+        padding: 10,
+        background: "#f9f9f9",
+      }}
+    >
       <h3 style={{ textAlign: "center" }}>{title}</h3>
       <SortableContext items={items} strategy={rectSortingStrategy} id={title}>
-        <div>
-          {items.map(id => <SortableItem key={id} id={id} />)}
+        <div style={{ minHeight: 40 }}>
+          {items.map(id => (
+            <SortableItem key={id} id={id} />
+          ))}
         </div>
       </SortableContext>
     </div>
@@ -137,7 +135,11 @@ function SortableItem({ id, dragOverlay }) {
     borderRadius: 6,
     padding: "6px 10px",
     margin: "4px 0",
-    background: dragOverlay ? "#e0f7ff" : (sortable.isDragging ? "#e0f7ff" : "#fff"),
+    background: dragOverlay
+      ? "#e0f7ff"
+      : sortable.isDragging
+      ? "#e0f7ff"
+      : "#fff",
     cursor: "grab",
     opacity: sortable.isDragging && !dragOverlay ? 0.5 : 1,
   };
