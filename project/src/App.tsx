@@ -1,5 +1,3 @@
-// src/App.tsx
-
 import { useState } from "react";
 import {
   DndContext,
@@ -15,7 +13,6 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { restrictToParentElement } from "@dnd-kit/modifiers";
 
 const tiers = ["우주명작", "명작", "재밌음", "볼만함", "쓰레기", "그냥올려놈"];
 
@@ -83,7 +80,7 @@ function App() {
   return (
     <div style={{ padding: 20 }}>
       <h1 style={{ textAlign: "center" }}>애니 티어표</h1>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToParentElement]}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
           <SortableTier title="Unranked" items={unranked} />
           {tiers.map(tier => (
@@ -128,5 +125,6 @@ function SortableItem({ id }) {
 }
 
 export default App;
+
 
 
