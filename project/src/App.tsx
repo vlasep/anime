@@ -66,17 +66,24 @@ function App() {
     const toList = [...(to === "Unranked" ? unranked : tierData[to])];
 
     const fromIndex = fromList.indexOf(active.id);
-    const toIndex = toList.indexOf(over.id);
-
     fromList.splice(fromIndex, 1);
-    const insertIndex = toIndex >= 0 ? toIndex : toList.length;
-    toList.splice(insertIndex, 0, active.id);
 
-    if (from === "Unranked") setUnranked(fromList);
-    else setTierData(prev => ({ ...prev, [from]: fromList }));
+    if (from === to) {
+      const overIndex = toList.indexOf(over.id);
+      const newList = arrayMove(toList, fromIndex, overIndex);
+      if (to === "Unranked") setUnranked(newList);
+      else setTierData(prev => ({ ...prev, [to]: newList }));
+    } else {
+      const overIndex = toList.indexOf(over.id);
+      const insertIndex = overIndex >= 0 ? overIndex : toList.length;
+      toList.splice(insertIndex, 0, active.id);
 
-    if (to === "Unranked") setUnranked(toList);
-    else setTierData(prev => ({ ...prev, [to]: toList }));
+      if (from === "Unranked") setUnranked(fromList);
+      else setTierData(prev => ({ ...prev, [from]: fromList }));
+
+      if (to === "Unranked") setUnranked(toList);
+      else setTierData(prev => ({ ...prev, [to]: toList }));
+    }
   };
 
   return (
