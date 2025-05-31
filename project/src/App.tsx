@@ -1,181 +1,132 @@
-import React, { useState, useEffect } from "react";
-import { DndContext, closestCenter } from "@dnd-kit/core";
+// src/App.tsx
+
+import { useState } from "react";
 import {
-  arrayMove,
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
   SortableContext,
+  arrayMove,
   useSortable,
-  verticalListSortingStrategy
+  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { restrictToParentElement } from "@dnd-kit/modifiers";
 
 const tiers = ["우주명작", "명작", "재밌음", "볼만함", "쓰레기", "그냥올려놈"];
-const tierColors = {
-  우주명작: "#ffdddd",
-  명작: "#ffe5cc",
-  재밌음: "#ffffcc",
-  볼만함: "#ddffdd",
-  쓰레기: "#e0e0e0",
-  그냥올려놈: "#f0f0f0"
-};
 
-const initialAnimeList = [
-  "코드기오스", "오버로드", "도쿄구울", "슈타인즈 게이트", "우마루",
-  "플라스틱 메모리즈", "소아온", "카구야", "무직전생", "5등분",
-  "코노스바", "케이온", "주술회전", "내여귀", "살육의 천사",
-  "원펀맨", "너의 이름은", "목소리의 형태", "알바뛰는 마왕", "유녀전기",
-  "페배인", "키스시스", "스즈메", "기생수", "데스노트",
-  "사를로트", "리제로", "봇치", "스파페"
+const allAnime = [
+  "코드기오스", "오버로드", "도쿄구울", "이별의 아침에 약속의 꽃을 장식하자", "너의 췌장을 먹고싶어",
+  "슈타인즈 게이트", "우마루", "플라스틱 메모리즈", "소아온", "카구야", "가브릴", "무직전생",
+  "애완그녀", "약속의 내버렌드", "날씨의 아이", "코바야지", "마녀의 여행", "5등분",
+  "노게임노라", "나에게 천사가 내려왔다", "변변치않은", "니세코이", "토라도라", "던만추",
+  "에로망가선생", "블랙불릿", "마사무네", "코노스바", "극주보도", "바케모노가타리",
+  "청춘돼지", "내청코", "중2병", "케이온", "주술회전", "내여귀", "여빌",
+  "나만이 없는거리", "살육의 천사", "원펀맨", "너의 이름은", "목소리의 형태", "알바뛰는 마왕",
+  "유녀전기", "페배인", "키스시스", "스즈메", "기생수", "데스노트", "사를로트",
+  "리제로", "봇치", "스파페"
 ];
 
-function SortableItem({ id, tier, onDragStart }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition
-  } = useSortable({ id });
+function App() {
+  const [tierData, setTierData] = useState(
+    Object.fromEntries(tiers.map(t => [t, []]))
+  );
+  const [unranked, setUnranked] = useState(allAnime);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const allTiers = { ...tierData, Unranked: unranked };
+    let sourceTier = null;
+    let targetTier = null;
+
+    for (const tier in allTiers) {
+      if (allTiers[tier].includes(active.id)) sourceTier = tier;
+      if (allTiers[tier].includes(over.id)) targetTier = tier;
+    }
+
+    if (!sourceTier) sourceTier = "Unranked";
+    if (!targetTier) targetTier = "Unranked";
+
+    if (sourceTier === targetTier) {
+      const updated = arrayMove(
+        allTiers[sourceTier],
+        allTiers[sourceTier].indexOf(active.id),
+        allTiers[sourceTier].indexOf(over.id)
+      );
+
+      if (sourceTier === "Unranked") setUnranked(updated);
+      else setTierData({ ...tierData, [sourceTier]: updated });
+    } else {
+      const sourceItems = [...allTiers[sourceTier]].filter(id => id !== active.id);
+      const targetItems = [...allTiers[targetTier]];
+      const overIndex = targetItems.indexOf(over.id);
+      targetItems.splice(overIndex + 1, 0, active.id);
+
+      if (sourceTier === "Unranked") setUnranked(sourceItems);
+      else tierData[sourceTier] = sourceItems;
+
+      if (targetTier === "Unranked") setUnranked(targetItems);
+      else setTierData({ ...tierData, [targetTier]: targetItems });
+    }
+  };
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h1 style={{ textAlign: "center" }}>애니 티어표</h1>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToParentElement]}>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
+          <SortableTier title="Unranked" items={unranked} />
+          {tiers.map(tier => (
+            <SortableTier key={tier} title={tier} items={tierData[tier]} />
+          ))}
+        </div>
+      </DndContext>
+    </div>
+  );
+}
+
+function SortableTier({ title, items }) {
+  return (
+    <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
+      <h3 style={{ textAlign: "center" }}>{title}</h3>
+      <SortableContext items={items} strategy={() => items}>
+        {items.map(id => <SortableItem key={id} id={id} />)}
+      </SortableContext>
+    </div>
+  );
+}
+
+function SortableItem({ id }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    border: "1px solid gray",
-    padding: "5px",
-    margin: "5px 0",
+    border: "1px solid #aaa",
+    borderRadius: 6,
+    padding: "6px 10px",
+    margin: "4px 0",
+    background: "#fff",
     cursor: "grab",
-    background: tierColors[tier] || "white",
-    borderRadius: "4px"
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      onDragStart={(e) => onDragStart(e, id, tier)}
-    >
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {id}
     </div>
   );
 }
 
-export default function App() {
-  const [tierList, setTierList] = useState(() => {
-    const saved = localStorage.getItem("tierList");
-    return saved ? JSON.parse(saved) : tiers.reduce((acc, t) => ({ ...acc, [t]: [] }), {});
-  });
-
-  const [unranked, setUnranked] = useState(() => {
-    const saved = localStorage.getItem("unranked");
-    return saved ? JSON.parse(saved) : initialAnimeList;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("tierList", JSON.stringify(tierList));
-  }, [tierList]);
-
-  useEffect(() => {
-    localStorage.setItem("unranked", JSON.stringify(unranked));
-  }, [unranked]);
-
-  const handleDragStart = (e, anime, from) => {
-    e.dataTransfer.setData("anime", anime);
-    e.dataTransfer.setData("from", from);
-  };
-
-  const handleDrop = (e, to) => {
-    const anime = e.dataTransfer.getData("anime");
-    const from = e.dataTransfer.getData("from");
-    if (!anime || from === to) return;
-
-    if (from === "Unranked") setUnranked(prev => prev.filter(a => a !== anime));
-    else setTierList(prev => ({
-      ...prev,
-      [from]: prev[from].filter(a => a !== anime)
-    }));
-
-    if (to === "Unranked") setUnranked(prev => [...prev, anime]);
-    else setTierList(prev => ({
-      ...prev,
-      [to]: [...prev[to], anime]
-    }));
-  };
-
-  const allowDrop = (e) => e.preventDefault();
-
-  return (
-    <DndContext collisionDetection={closestCenter}>
-      <div style={{ padding: 20 }}>
-        <h1>애니메이션 티어표</h1>
-
-        {tiers.map((tier) => (
-          <div
-            key={tier}
-            onDrop={(e) => handleDrop(e, tier)}
-            onDragOver={allowDrop}
-            style={{
-              marginTop: 20,
-              padding: 10,
-              background: "#f9f9f9",
-              border: "2px solid #999",
-              borderRadius: 8
-            }}
-          >
-            <h2>{tier}</h2>
-            <SortableContext
-              items={tierList[tier]}
-              strategy={verticalListSortingStrategy}
-            >
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {tierList[tier].map(anime => (
-                  <SortableItem
-                    key={anime}
-                    id={anime}
-                    tier={tier}
-                    onDragStart={handleDragStart}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </div>
-        ))}
-
-        <h2 style={{ marginTop: 30 }}>Unranked</h2>
-        <div
-          onDrop={(e) => handleDrop(e, "Unranked")}
-          onDragOver={allowDrop}
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 10,
-            minHeight: 100,
-            border: "2px dashed gray",
-            padding: 10,
-            background: "#f0f0f0",
-            borderRadius: 8
-          }}
-        >
-          {unranked.map(anime => (
-            <div
-              key={anime}
-              draggable
-              onDragStart={(e) => handleDragStart(e, anime, "Unranked")}
-              style={{
-                border: "1px solid gray",
-                padding: 5,
-                cursor: "grab",
-                background: "white",
-                borderRadius: 4
-              }}
-            >
-              {anime}
-            </div>
-          ))}
-        </div>
-      </div>
-    </DndContext>
-  );
-}
+export default App;
 
 
