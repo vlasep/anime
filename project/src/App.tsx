@@ -52,37 +52,42 @@ function App() {
     setActiveId(event.active.id);
   };
 
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    if (!over) return;
-    const from = findContainer(active.id);
-    const to = findContainer(over.id) || over.id;
+const handleDragEnd = (event) => {
+  const { active, over } = event;
+  if (!over) return;
 
-    if (!from || !to) return;
+  setActiveId(null);
 
-    if (from === to) {
-      const list = from === "Unranked" ? [...unranked] : [...tierData[from]];
-      const oldIndex = list.indexOf(active.id);
-      const newIndex = list.indexOf(over.id);
-      const reordered = arrayMove(list, oldIndex, newIndex);
-      if (from === "Unranked") setUnranked(reordered);
-      else setTierData({ ...tierData, [from]: reordered });
-    } else {
-      const fromList = from === "Unranked" ? [...unranked] : [...tierData[from]];
-      const toList = to === "Unranked" ? [...unranked] : [...tierData[to]];
+  const from = findContainer(active.id);
+  const isOverItem = tiers.includes(over.id) === false && over.id !== "Unranked";
+  const to = isOverItem ? findContainer(over.id) : over.id;
 
-      fromList.splice(fromList.indexOf(active.id), 1);
-      const insertIndex = toList.indexOf(over.id);
-      toList.splice(insertIndex >= 0 ? insertIndex : toList.length, 0, active.id);
+  if (!from || !to) return;
 
-      if (from === "Unranked") setUnranked(fromList);
-      else tierData[from] = fromList;
+  if (from === to) {
+    const list = from === "Unranked" ? [...unranked] : [...tierData[from]];
+    const oldIndex = list.indexOf(active.id);
+    const newIndex = list.indexOf(over.id);
+    const reordered = arrayMove(list, oldIndex, newIndex);
+    if (from === "Unranked") setUnranked(reordered);
+    else setTierData({ ...tierData, [from]: reordered });
+  } else {
+    const fromList = from === "Unranked" ? [...unranked] : [...tierData[from]];
+    const toList = to === "Unranked" ? [...unranked] : [...tierData[to]];
 
-      if (to === "Unranked") setUnranked(toList);
-      else tierData[to] = toList;
+    fromList.splice(fromList.indexOf(active.id), 1);
+    const insertIndex = isOverItem ? toList.indexOf(over.id) : toList.length;
+    toList.splice(insertIndex, 0, active.id);
 
-      setTierData({ ...tierData });
-    }
+    if (from === "Unranked") setUnranked(fromList);
+    else tierData[from] = fromList;
+
+    if (to === "Unranked") setUnranked(toList);
+    else tierData[to] = toList;
+
+    setTierData({ ...tierData });
+  }
+};
 
     setActiveId(null);
   };
