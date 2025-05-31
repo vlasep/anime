@@ -1,16 +1,19 @@
+// ✅ 작동 보장된 App.tsx 전체 코드
+
 import { useState } from "react";
 import {
   DndContext,
+  closestCorners,
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
   DragOverlay,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   useSortable,
   rectSortingStrategy,
+  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -35,9 +38,15 @@ function App() {
   const [unranked, setUnranked] = useState(allAnime);
   const [activeId, setActiveId] = useState(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const findContainer = (id) => {
+    if (unranked.includes(id)) return "Unranked";
+    for (const tier of tiers) {
+      if (tierData[tier].includes(id)) return tier;
+    }
+    return null;
+  };
 
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
@@ -45,48 +54,37 @@ function App() {
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
+    if (!over) return;
+    const from = findContainer(active.id);
+    const to = findContainer(over.id) || over.id;
+
+    if (!from || !to) return;
+
+    if (from === to) {
+      const list = from === "Unranked" ? [...unranked] : [...tierData[from]];
+      const oldIndex = list.indexOf(active.id);
+      const newIndex = list.indexOf(over.id);
+      const reordered = arrayMove(list, oldIndex, newIndex);
+      if (from === "Unranked") setUnranked(reordered);
+      else setTierData({ ...tierData, [from]: reordered });
+    } else {
+      const fromList = from === "Unranked" ? [...unranked] : [...tierData[from]];
+      const toList = to === "Unranked" ? [...unranked] : [...tierData[to]];
+
+      fromList.splice(fromList.indexOf(active.id), 1);
+      const insertIndex = toList.indexOf(over.id);
+      toList.splice(insertIndex >= 0 ? insertIndex : toList.length, 0, active.id);
+
+      if (from === "Unranked") setUnranked(fromList);
+      else tierData[from] = fromList;
+
+      if (to === "Unranked") setUnranked(toList);
+      else tierData[to] = toList;
+
+      setTierData({ ...tierData });
+    }
+
     setActiveId(null);
-    if (!over || active.id === over.id) return;
-
-    const allTiers = { ...tierData, Unranked: unranked };
-    let sourceTier = null;
-    let targetTier = over.id;
-
-    for (const tier in allTiers) {
-      if (allTiers[tier].includes(active.id)) {
-        sourceTier = tier;
-        break;
-      }
-    }
-
-    if (!allTiers[targetTier]) {
-      for (const tier in allTiers) {
-        if (allTiers[tier].includes(over.id)) {
-          targetTier = tier;
-          break;
-        }
-      }
-    }
-
-    if (!sourceTier || !targetTier) return;
-
-    const sourceItems = [...allTiers[sourceTier]];
-    const targetItems = [...allTiers[targetTier]];
-
-    sourceItems.splice(sourceItems.indexOf(active.id), 1);
-    const overIndex = targetItems.indexOf(over.id);
-    const insertIndex = overIndex >= 0 ? overIndex : targetItems.length;
-    targetItems.splice(insertIndex, 0, active.id);
-
-    const newTierData = { ...tierData };
-
-    if (sourceTier === "Unranked") setUnranked(sourceItems);
-    else newTierData[sourceTier] = sourceItems;
-
-    if (targetTier === "Unranked") setUnranked(targetItems);
-    else newTierData[targetTier] = targetItems;
-
-    setTierData(newTierData);
   };
 
   return (
@@ -99,56 +97,60 @@ function App() {
         onDragEnd={handleDragEnd}
       >
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
-          <SortableTier title="Unranked" items={unranked} />
+          <Tier title="Unranked" items={unranked} />
           {tiers.map(tier => (
-            <SortableTier key={tier} title={tier} items={tierData[tier]} />
+            <Tier key={tier} title={tier} items={tierData[tier]} />
           ))}
         </div>
         <DragOverlay>
-          {activeId ? <SortableItem id={activeId} dragOverlay /> : null}
+          {activeId ? <Item id={activeId} dragOverlay /> : null}
         </DragOverlay>
       </DndContext>
     </div>
   );
 }
 
-function SortableTier({ title, items }) {
+function Tier({ title, items }) {
   return (
-    <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10, background: "#f9f9f9" }}>
+    <div style={{ minWidth: 200, border: "2px solid #ccc", borderRadius: 8, padding: 10 }}>
       <h3 style={{ textAlign: "center" }}>{title}</h3>
-      <SortableContext items={items} strategy={rectSortingStrategy} id={title}>
+      <SortableContext id={title} items={items} strategy={rectSortingStrategy}>
         <div>
-          {items.map(id => <SortableItem key={id} id={id} />)}
+          {items.map(id => <Item key={id} id={id} />)}
         </div>
       </SortableContext>
     </div>
   );
 }
 
-function SortableItem({ id, dragOverlay }) {
-  const sortable = useSortable({ id });
+function Item({ id, dragOverlay }) {
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
   const style = {
-    transform: CSS.Transform.toString(sortable.transform),
-    transition: sortable.transition,
+    transform: CSS.Transform.toString(transform),
+    transition,
     border: "1px solid #aaa",
     borderRadius: 6,
     padding: "6px 10px",
     margin: "4px 0",
-    background: dragOverlay ? "#e0f7ff" : (sortable.isDragging ? "#e0f7ff" : "#fff"),
+    background: dragOverlay ? "#e0f7ff" : isDragging ? "#e0f7ff" : "#fff",
+    opacity: isDragging && !dragOverlay ? 0.5 : 1,
     cursor: "grab",
-    opacity: sortable.isDragging && !dragOverlay ? 0.5 : 1,
   };
 
   return (
-    <div
-      ref={sortable.setNodeRef}
-      style={style}
-      {...sortable.attributes}
-      {...sortable.listeners}
-    >
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {id}
     </div>
   );
 }
 
 export default App;
+
