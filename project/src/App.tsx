@@ -48,35 +48,36 @@ function App() {
     return null;
   };
 
-  const handleDragStart = (event) => {
-    setActiveId(event.active.id);
-  };
+const handleDragEnd = (event) => {
+  const { active, over } = event;
+  setActiveId(null);
+  if (!over || active.id === over.id) return;
 
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    setActiveId(null);
-    if (!over || active.id === over.id) return;
+  const from = findContainer(active.id);
+  const overContainer = tiers.includes(over.id) || over.id === "Unranked" ? over.id : findContainer(over.id);
 
-    const from = findContainer(active.id);
-    const to = findContainer(over.id) || over.id;
+  if (!from || !overContainer) return;
 
-    if (!from || !to) return;
+  const fromList = [...(from === "Unranked" ? unranked : tierData[from])];
+  const toList = [...(overContainer === "Unranked" ? unranked : tierData[overContainer])];
 
-    const fromList = [...(from === "Unranked" ? unranked : tierData[from])];
-    const toList = [...(to === "Unranked" ? unranked : tierData[to])];
+  // Remove from old list
+  const fromIndex = fromList.indexOf(active.id);
+  fromList.splice(fromIndex, 1);
 
-    const fromIndex = fromList.indexOf(active.id);
-    fromList.splice(fromIndex, 1);
-    toList.push(active.id);
+  // Add to new list
+  const overIndex = toList.indexOf(over.id);
+  const insertIndex = overIndex >= 0 ? overIndex : toList.length;
+  toList.splice(insertIndex, 0, active.id);
 
-    if (from === "Unranked") setUnranked(fromList);
-    else tierData[from] = fromList;
+  if (from === "Unranked") setUnranked(fromList);
+  else tierData[from] = fromList;
 
-    if (to === "Unranked") setUnranked(toList);
-    else tierData[to] = toList;
+  if (overContainer === "Unranked") setUnranked(toList);
+  else tierData[overContainer] = toList;
 
-    setTierData({ ...tierData });
-  };
+  setTierData({ ...tierData });
+};
 
   return (
     <div style={{ padding: 20 }}>
