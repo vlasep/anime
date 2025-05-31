@@ -7,6 +7,7 @@ import {
   useSensor,
   useSensors,
   closestCorners,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -35,13 +36,19 @@ function App() {
     Object.fromEntries(tiers.map(t => [t, []]))
   );
   const [unranked, setUnranked] = useState(allAnime);
+  const [activeId, setActiveId] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
+    setActiveId(null);
     if (!over || active.id === over.id) return;
 
     const allTiers = { ...tierData, Unranked: unranked };
@@ -59,7 +66,6 @@ function App() {
     const targetItems = [...allTiers[targetTier]];
 
     sourceItems.splice(sourceItems.indexOf(active.id), 1);
-
     const overIndex = targetItems.indexOf(over.id);
     const insertIndex = overIndex >= 0 ? overIndex : targetItems.length;
     targetItems.splice(insertIndex, 0, active.id);
@@ -77,6 +83,7 @@ function App() {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
@@ -85,6 +92,9 @@ function App() {
             <SortableTier key={tier} title={tier} items={tierData[tier]} />
           ))}
         </div>
+        <DragOverlay>
+          {activeId ? <SortableItem id={activeId} dragOverlay /> : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );
@@ -103,29 +113,34 @@ function SortableTier({ title, items }) {
   );
 }
 
-function SortableItem({ id }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-
+function SortableItem({ id, dragOverlay }) {
+  const sortable = useSortable({ id });
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: CSS.Transform.toString(sortable.transform),
+    transition: sortable.transition,
     border: "1px solid #aaa",
     borderRadius: 6,
     padding: "6px 10px",
     margin: "4px 0",
-    background: isDragging ? "#e0f7ff" : "#fff",
+    background: dragOverlay ? "#e0f7ff" : (sortable.isDragging ? "#e0f7ff" : "#fff"),
     cursor: "grab",
-    opacity: isDragging ? 0.5 : 1,
+    opacity: sortable.isDragging && !dragOverlay ? 0.5 : 1,
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={sortable.setNodeRef}
+      style={style}
+      {...sortable.attributes}
+      {...sortable.listeners}
+    >
       {id}
     </div>
   );
 }
 
 export default App;
+
 
 
 
