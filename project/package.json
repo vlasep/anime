@@ -9,10 +9,13 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
-  "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
-  },
+"dependencies": {
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  "@dnd-kit/core": "^6.0.6",
+  "@dnd-kit/sortable": "^6.0.6",
+  "@dnd-kit/utilities": "^6.0.6"
+},
   "devDependencies": {
     "@eslint/js": "^9.27.0",
     "@types/react": "^19.1.5",
