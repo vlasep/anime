@@ -55,30 +55,36 @@ function App() {
   const handleDragEnd = (event) => {
     const { active, over } = event;
     setActiveId(null);
+    if (!over || active.id === over.id) return;
 
-    if (!over) return;
+    const fromContainer = findContainer(active.id);
+    const toContainer = findContainer(over.id);
 
-    const from = findContainer(active.id);
-    const to = over.id;
+    if (!fromContainer || !toContainer) return;
 
-    if (!from || !to || from === to) return;
+    const fromList = [...(fromContainer === "Unranked" ? unranked : tierData[fromContainer])];
+    const toList = [...(toContainer === "Unranked" ? unranked : tierData[toContainer])];
 
-    const fromList = [...(from === "Unranked" ? unranked : tierData[from])];
-    const toList = [...(to === "Unranked" ? unranked : tierData[to])];
+    const fromIndex = fromList.indexOf(active.id);
+    const toIndex = toList.indexOf(over.id);
 
-    const index = fromList.indexOf(active.id);
-    if (index === -1) return;
+    if (fromContainer === toContainer) {
+      const newList = arrayMove(toList, fromIndex, toIndex);
+      if (fromContainer === "Unranked") setUnranked(newList);
+      else setTierData({ ...tierData, [fromContainer]: newList });
+    } else {
+      fromList.splice(fromIndex, 1);
+      const insertIndex = toIndex >= 0 ? toIndex : toList.length;
+      toList.splice(insertIndex, 0, active.id);
 
-    fromList.splice(index, 1);
-    toList.push(active.id);
+      if (fromContainer === "Unranked") setUnranked(fromList);
+      else tierData[fromContainer] = fromList;
 
-    if (from === "Unranked") setUnranked(fromList);
-    else tierData[from] = fromList;
+      if (toContainer === "Unranked") setUnranked(toList);
+      else tierData[toContainer] = toList;
 
-    if (to === "Unranked") setUnranked(toList);
-    else tierData[to] = toList;
-
-    setTierData({ ...tierData });
+      setTierData({ ...tierData });
+    }
   };
 
   return (
@@ -149,6 +155,7 @@ function Item({ id, dragOverlay }) {
 }
 
 export default App;
+
 
 
 
