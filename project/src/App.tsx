@@ -1,16 +1,17 @@
+// src/App.tsx
+
 import { useState } from "react";
 import {
   DndContext,
-  closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
+  rectIntersection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  arrayMove,
   useSortable,
-  sortableKeyboardCoordinates,
+  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -51,8 +52,7 @@ function App() {
       if (allTiers[tier].includes(over.id)) targetTier = tier;
     }
 
-    if (!sourceTier) sourceTier = "Unranked";
-    if (!targetTier) targetTier = "Unranked";
+    if (!sourceTier || !targetTier) return;
 
     if (sourceTier === targetTier) {
       const updated = arrayMove(
@@ -64,9 +64,10 @@ function App() {
       if (sourceTier === "Unranked") setUnranked(updated);
       else setTierData({ ...tierData, [sourceTier]: updated });
     } else {
-      const sourceItems = [...allTiers[sourceTier]].filter(id => id !== active.id);
+      const sourceItems = allTiers[sourceTier].filter(id => id !== active.id);
       const targetItems = [...allTiers[targetTier]];
       const overIndex = targetItems.indexOf(over.id);
+
       targetItems.splice(overIndex + 1, 0, active.id);
 
       if (sourceTier === "Unranked") setUnranked(sourceItems);
@@ -80,7 +81,11 @@ function App() {
   return (
     <div style={{ padding: 20 }}>
       <h1 style={{ textAlign: "center" }}>애니 티어표</h1>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={rectIntersection}
+        onDragEnd={handleDragEnd}
+      >
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
           <SortableTier title="Unranked" items={unranked} />
           {tiers.map(tier => (
@@ -127,6 +132,7 @@ function SortableItem({ id }) {
 }
 
 export default App;
+
 
 
 
