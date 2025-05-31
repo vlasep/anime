@@ -54,38 +54,28 @@ function App() {
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (!over) return;
     setActiveId(null);
+    if (!over || active.id === over.id) return;
 
     const from = findContainer(active.id);
-    const isOverItem = !tiers.includes(over.id) && over.id !== "Unranked";
-    const to = isOverItem ? findContainer(over.id) : over.id;
+    const to = findContainer(over.id) || over.id;
 
-    if (!from || !to) return;
+    if (!from || !to || from === to) return;
 
-    if (from === to) {
-      const list = from === "Unranked" ? [...unranked] : [...tierData[from]];
-      const oldIndex = list.indexOf(active.id);
-      const newIndex = list.indexOf(over.id);
-      const reordered = arrayMove(list, oldIndex, newIndex);
-      if (from === "Unranked") setUnranked(reordered);
-      else setTierData({ ...tierData, [from]: reordered });
-    } else {
-      const fromList = from === "Unranked" ? [...unranked] : [...tierData[from]];
-      const toList = to === "Unranked" ? [...unranked] : [...tierData[to]];
+    const fromList = [...(from === "Unranked" ? unranked : tierData[from])];
+    const toList = [...(to === "Unranked" ? unranked : tierData[to])];
 
-      fromList.splice(fromList.indexOf(active.id), 1);
-      const insertIndex = isOverItem ? toList.indexOf(over.id) : toList.length;
-      toList.splice(insertIndex, 0, active.id);
+    const fromIndex = fromList.indexOf(active.id);
+    fromList.splice(fromIndex, 1);
+    toList.push(active.id);
 
-      if (from === "Unranked") setUnranked(fromList);
-      else tierData[from] = fromList;
+    if (from === "Unranked") setUnranked(fromList);
+    else tierData[from] = fromList;
 
-      if (to === "Unranked") setUnranked(toList);
-      else tierData[to] = toList;
+    if (to === "Unranked") setUnranked(toList);
+    else tierData[to] = toList;
 
-      setTierData({ ...tierData });
-    }
+    setTierData({ ...tierData });
   };
 
   return (
@@ -156,5 +146,6 @@ function Item({ id, dragOverlay }) {
 }
 
 export default App;
+
 
 
