@@ -6,6 +6,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -79,11 +80,23 @@ export default function App() {
 }
 
 function Tier({ id, title, items }: { id: string; title: string; items: string[] }) {
+  const { setNodeRef } = useDroppable({ id });
+
   return (
     <div>
       <h3>{title}</h3>
       <SortableContext items={items} strategy={rectSortingStrategy}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, minHeight: 50, padding: 10, background: '#f0f0f0' }}>
+        <div
+          ref={setNodeRef}
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            minHeight: 50,
+            padding: 10,
+            background: '#f0f0f0',
+          }}
+        >
           {items.map(item => (
             <Item key={item} id={item} />
           ))}
