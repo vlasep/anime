@@ -78,7 +78,13 @@ export default function App() {
   );
 }
 
-function Tier({ id, title, items }: { id: string; title: string; items: string[] }) {
+interface TierProps {
+  id: string;
+  title: string;
+  items: string[];
+}
+
+const Tier: React.FC<TierProps> = ({ id, title, items }) => {
   return (
     <div>
       <h3>{title}</h3>
@@ -91,9 +97,13 @@ function Tier({ id, title, items }: { id: string; title: string; items: string[]
       </SortableContext>
     </div>
   );
+};
+
+interface ItemProps {
+  id: string;
 }
 
-function Item({ id }: { id: string }) {
+const Item: React.FC<ItemProps> = ({ id }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -109,4 +119,4 @@ function Item({ id }: { id: string }) {
       {id}
     </div>
   );
-}
+};
