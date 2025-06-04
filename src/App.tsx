@@ -14,6 +14,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDroppable } from '@dnd-kit/core';
 
 const tiers = ['우주명작', '명작', '재밌음', '볼만함', '쓰레기', '그냥올려놈'];
 
@@ -85,11 +86,22 @@ interface TierProps {
 }
 
 const Tier: React.FC<TierProps> = ({ id, title, items }) => {
+  const { setNodeRef } = useDroppable({ id });
   return (
     <div>
       <h3>{title}</h3>
       <SortableContext items={items} strategy={rectSortingStrategy}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, minHeight: 50, padding: 10, background: '#f0f0f0' }}>
+        <div
+          ref={setNodeRef}
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            minHeight: 50,
+            padding: 10,
+            background: '#f0f0f0',
+          }}
+        >
           {items.map(item => (
             <Item key={item} id={item} />
           ))}
