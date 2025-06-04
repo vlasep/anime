@@ -23,8 +23,8 @@ const initialAnime = [
 ];
 
 export default function App() {
-  const [tierData, setTierData] = useState(() =>
-    Object.fromEntries(tiers.map(t => [t, []]))
+  const [tierData, setTierData] = useState<Record<string, string[]>>(() =>
+    Object.fromEntries(tiers.map(t => [t, []])) as Record<string, string[]>
   );
   const [unranked, setUnranked] = useState(initialAnime);
   const sensors = useSensors(useSensor(PointerSensor));
